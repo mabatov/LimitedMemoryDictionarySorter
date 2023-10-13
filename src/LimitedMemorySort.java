@@ -1,49 +1,32 @@
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class LimitedMemorySort {
 
     public static void main(String[] args) throws IOException {
-        String inputFile = "files/input.txt";
+        String inputFile = "files/SHUFFLED_russian_nouns_with_definition.txt";
         String outputFile = "files/sorted-output.txt";
 
-        int bufferSize = 100;
+        int bufferSize = 1000;
 
-        List<String> buffer = new ArrayList<>();
+        Map<String, String> buffer = new TreeMap<>();
         List<String> tempFiles = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new FileReader(inputFile))) {
             String line;
             int linesRead = 0;
             while ((line = reader.readLine()) != null) {
-                buffer.add(line);
+                String[] parts = line.split(":");
+                buffer.put(parts[0], parts[1]);
                 linesRead++;
                 if (linesRead >= bufferSize) {
-                    Collections.sort(buffer);
-                    String tempFile = "files/temp_" + System.currentTimeMillis() + ".txt";
-                    tempFiles.add(tempFile);
-                    try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
-                        for (String sortedLine : buffer) {
-                            writer.write(sortedLine);
-                            writer.newLine();
-                        }
-                    }
+                    saveFile(buffer, tempFiles);
                     buffer.clear();
                     linesRead = 0;
                 }
             }
             if (!buffer.isEmpty()) {
-                Collections.sort(buffer);
-                String tempFile = "files/temp_" + System.currentTimeMillis() + ".txt";
-                tempFiles.add(tempFile);
-                try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
-                    for (String sortedLine : buffer) {
-                        writer.write(sortedLine);
-                        writer.newLine();
-                    }
-                }
+                saveFile(buffer, tempFiles);
             }
         }
 
@@ -54,37 +37,42 @@ public class LimitedMemorySort {
         }
     }
 
-    private static void mergeSortedFiles(List<String> fileNames, String outputFileName) throws IOException {
-        List<BufferedReader> readers = new ArrayList<>();
-        for (String fileName : fileNames) {
-            readers.add(new BufferedReader(new FileReader(fileName)));
+    private static void saveFile(Map<String, String> buffer, List<String> tempFiles) throws IOException {
+        String tempFile = "files/temp_" + System.currentTimeMillis() + ".txt";
+        tempFiles.add(tempFile);
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+            for (Map.Entry<String, String> entry : buffer.entrySet()) {
+                writer.write(entry.getKey() + ":" + entry.getValue());
+                writer.newLine();
+                writer.flush();
+            }
         }
+    }
 
+    public static void mergeSortedFiles(List<String> fileNames, String outputFileName) throws IOException {
+        List<BufferedReader> readers = new ArrayList<>();
+        PriorityQueue<String> heap = new PriorityQueue<>(Comparator.comparing(String::toString));
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFileName))) {
-            List<String> currentLines = new ArrayList<>(readers.size());
+            for (String fileName : fileNames) {
+                readers.add(new BufferedReader(new FileReader(fileName)));
+            }
 
-            for (int i = 0; i < readers.size(); i++) {
-                String line = readers.get(i).readLine();
+            for (BufferedReader reader : readers) {
+                String line = reader.readLine();
                 if (line != null) {
-                    currentLines.add(line);
+                    heap.add(line);
                 }
             }
 
-            while (!currentLines.isEmpty()) {
-                String minLine = Collections.min(currentLines);
-                writer.write(minLine);
+            while (!heap.isEmpty()) {
+                String min = heap.poll();
+                writer.write(min);
                 writer.newLine();
 
-                for(int i = 0; i < currentLines.size(); i++) {
-                    if (currentLines.get(i).equals(minLine)) {
-                        String nextLine = readers.get(i).readLine();
-                        if(nextLine!=null){
-                            currentLines.set(i, nextLine);
-                        } else {
-                            currentLines.remove(i);
-                            readers.get(i).close();
-                            i--;
-                        }
+                for (BufferedReader reader : readers) {
+                    String line = reader.readLine();
+                    if (line != null) {
+                        heap.add(line);
                     }
                 }
             }
