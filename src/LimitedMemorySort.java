@@ -4,7 +4,7 @@ import java.util.*;
 public class LimitedMemorySort {
 
     public static void main(String[] args) throws IOException {
-        String inputFile = "files/SHUFFLED_russian_nouns_with_definition.txt";
+        String inputFile = "files/input.txt";
         String outputFile = "files/sorted-output.txt";
 
         int bufferSize = 1000;
