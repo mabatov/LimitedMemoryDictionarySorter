@@ -1,6 +1,8 @@
 package com.mablab.data.processing;
 
 import com.mablab.constants.Constants;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.util.*;
@@ -8,18 +10,18 @@ import java.util.*;
 /**
  * This class handles file operations.
  */
+@Slf4j
 public class DataProcessor {
 
     /**
      * Reads the input file, sorts the data in memory, and saves it to temporary files.
      *
-     * @param inputFile   The path of the input file.
-     * @param buffer      The buffer to store the sorted data.
-     * @param tempFiles   The list of temporary file names.
-     * @param bufferSize  The maximum number of lines to be stored in memory.
-     * @throws IOException If an I/O error occurs.
+     * @param inputFile  The path of the input file.
+     * @param buffer     The buffer to store the sorted data.
+     * @param tempFiles  The list of temporary file names.
+     * @param bufferSize The maximum number of lines to be stored in memory.
      */
-    public void readAndSort(String inputFile, Map<String, String> buffer, List<String> tempFiles, int bufferSize) throws IOException {
+    public void readAndSort(String inputFile, Map<String, String> buffer, List<String> tempFiles, int bufferSize) {
         try (BufferedReader reader = new BufferedReader(new FileReader(inputFile))) {
             String line;
             int linesRead = 0;
@@ -36,17 +38,18 @@ public class DataProcessor {
             if (!buffer.isEmpty()) {
                 saveBufferToFile(buffer, tempFiles);
             }
+        } catch (IOException e) {
+            log.error("Error occurred while reading and sorting the input file", e);
         }
     }
 
     /**
      * Saves the buffer data to a temporary file.
      *
-     * @param buffer     The buffer containing the data to be saved.
-     * @param tempFiles  The list of temporary file names.
-     * @throws IOException If an I/O error occurs.
+     * @param buffer    The buffer containing the data to be saved.
+     * @param tempFiles The list of temporary file names.
      */
-    private void saveBufferToFile(Map<String, String> buffer, List<String> tempFiles) throws IOException {
+    private void saveBufferToFile(Map<String, String> buffer, List<String> tempFiles) {
         String tempFile = Constants.TEMP_FILE_PREFIX + System.currentTimeMillis() + ".txt";
         tempFiles.add(tempFile);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
@@ -54,6 +57,8 @@ public class DataProcessor {
                 writer.write(entry.getKey() + ":" + entry.getValue());
                 writer.newLine();
             }
+        } catch (IOException e) {
+            log.error("Error occurred while saving buffer to file", e);
         }
     }
 
@@ -64,7 +69,10 @@ public class DataProcessor {
      */
     public void deleteTempFiles(List<String> fileNames) {
         for (String fileName : fileNames) {
-            new File(fileName).delete();
+            boolean deleted = new File(fileName).delete();
+            if (!deleted) {
+                log.warn("Failed to delete temporary file: {}", fileName);
+            }
         }
     }
 
@@ -112,15 +120,16 @@ public class DataProcessor {
             }
             writer.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("An error occurred while merging sorted files", e);
         }
     }
 
-    //
     /**
      * Helper class to wrap a line with its corresponding reader
      */
+    @Getter
     private static class LineWrapper {
+
         private final String line;
         private final BufferedReader reader;
 
@@ -135,23 +144,6 @@ public class DataProcessor {
             this.reader = reader;
         }
 
-        /**
-         * Returns the line of text.
-         *
-         * @return the line of text
-         */
-        public String getLine() {
-            return line;
-        }
-
-        /**
-         * Returns the BufferedReader associated with the line.
-         *
-         * @return the BufferedReader associated with the line
-         */
-        public BufferedReader getReader() {
-            return reader;
-        }
     }
 
 }
