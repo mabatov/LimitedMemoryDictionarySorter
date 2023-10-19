@@ -39,6 +39,13 @@ public class DataProcessor {
         }
     }
 
+    /**
+     * Saves the buffer data to a temporary file.
+     *
+     * @param buffer     The buffer containing the data to be saved.
+     * @param tempFiles  The list of temporary file names.
+     * @throws IOException If an I/O error occurs.
+     */
     private void saveBufferToFile(Map<String, String> buffer, List<String> tempFiles) throws IOException {
         String tempFile = Constants.TEMP_FILE_PREFIX + System.currentTimeMillis() + ".txt";
         tempFiles.add(tempFile);
@@ -50,12 +57,24 @@ public class DataProcessor {
         }
     }
 
+    /**
+     * Deletes the temporary files.
+     *
+     * @param fileNames The list of temporary file names to be deleted.
+     */
     public void deleteTempFiles(List<String> fileNames) {
         for (String fileName : fileNames) {
             new File(fileName).delete();
         }
     }
 
+    /**
+     * Merges the sorted files into a single output file.
+     *
+     * @param fileNames      The list of sorted file names.
+     * @param outputFileName The name of the output file.
+     * @throws IOException If an I/O error occurs.
+     */
     public void mergeSortedFiles(List<String> fileNames, String outputFileName) throws IOException {
         List<BufferedReader> readers = new ArrayList<>();
         PriorityQueue<String> heap = new PriorityQueue<>(Comparator.comparing(String::toString));
